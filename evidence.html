@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Closed? - Evidence Lab</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="evidence">
+<header class="topbar"><a class="brand" href="index.html">Case Closed?</a><nav><a href="index.html">Case Files</a><a href="suspects.html">Suspects</a><a href="evidence.html">Evidence</a><a href="verdict.html">Verdict</a></nav></header>
+<main class="wrap">
+  <h1>Evidence lab</h1>
+  <p class="lead">Inspect available clues, then compare them against what each suspect told you.</p>
+  <div class="grid" id="clues"></div>
+  <section class="folder compare">
+    <h2>Compare evidence with a statement</h2>
+    <div class="row">
+      <label>Clue <select id="cmp-clue"></select></label>
+      <label>Suspect <select id="cmp-suspect"></select></label>
+      <button class="btn" id="cmp-go" type="button">Compare</button>
+    </div>
+    <p id="cmp-result" class="result" hidden></p>
+  </section>
+</main>
+<script src="js/game.js"></script>
+</body>
+</html>

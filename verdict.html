@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Closed? - Final Verdict</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="verdict">
+<header class="topbar"><a class="brand" href="index.html">Case Closed?</a><nav><a href="index.html">Case Files</a><a href="suspects.html">Suspects</a><a href="evidence.html">Evidence</a><a href="verdict.html">Verdict</a></nav></header>
+<main class="wrap">
+  <h1>Final verdict</h1>
+  <p class="lead">Name the thief and cite the evidence that proves it. Irrelevant clues cost you points.</p>
+  <section class="folder">
+    <h2>Who took the Crimson Tear?</h2>
+    <div id="v-suspects" class="choices"></div>
+    <h2>Supporting evidence</h2>
+    <div id="v-clues" class="choices"></div>
+    <button class="btn" id="v-go" type="button">Make accusation</button>
+  </section>
+  <section class="folder verdict" id="v-result" hidden></section>
+</main>
+<script src="js/game.js"></script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+{
+  "title": "The Crimson Tear Heist",
+  "tagline": "One diamond. Four suspects. One thief hiding in plain sight.",
+  "briefing": "Blackwood Manor, 9:40 PM. During Lord Edmund Hale's charity dinner, the priceless Crimson Tear diamond vanished from the study safe. The safe was opened, not broken, and every door was watched, so the thief is still in the house. Interrogate the four suspects, collect evidence, expose contradictions and name the thief.",
+  "culpritId": "victor",
+  "solution": "Victor Crane opened the safe with the code he was trusted with. He lied about being in the library: his book was untouched, and a grey-suited man was filmed heading to the study at 9:41. He left a cigar-scented glove scrap and his own cufflink behind, and a bank letter shows he needed 200,000 pounds fast. Daniel, Margaret and Lila all have solid alibis.",
+  "suspects": [
+    {
+      "id": "victor", "name": "Victor Crane", "role": "Business partner",
+      "bio": "Lord Hale's business partner of twenty years. Smooth, wearing a grey three-piece suit, and rarely seen without a cigar.",
+      "motive": "Co-owns the Hale & Crane Trading firm with Lord Hale.",
+      "alibi": "Says he spent the whole evening reading in the library and never left it.",
+      "questions": [
+        { "id": "v1", "text": "Where were you at 9:40 PM?", "answer": "In the library, reading all evening. I never left the room, not for a second." },
+        { "id": "v2", "text": "Did you know the safe code?", "answer": "Edmund trusted me with it, of course. So did Moss. Hardly a state secret." },
+        { "id": "v3", "text": "How is your business doing?", "answer": "Hale & Crane has never been healthier. Profits are excellent." }
+      ]
+    },
+    {
+      "id": "margaret", "name": "Margaret Hale", "role": "Lord Hale's wife",
+      "bio": "Lord Hale's wife of fifteen years. Elegant in a red gown, with a famously sharp temper.",
+      "motive": "Inherits much of the Hale fortune and has quarrelled with her husband lately.",
+      "alibi": "Says she was in the garden on a phone call with her sister.",
+      "questions": [
+        { "id": "m1", "text": "Where were you at 9:40 PM?", "answer": "Out in the garden, on the phone with my sister. Check my phone records if you like." },
+        { "id": "m2", "text": "How is your marriage?", "answer": "Edmund and I are perfectly happy. Whatever you've heard is gossip." },
+        { "id": "m3", "text": "Did you see anyone near the study?", "answer": "Only a man in a grey suit hurrying along the east hallway, around a quarter to ten. I never saw his face." }
+      ]
+    },
+    {
+      "id": "daniel", "name": "Daniel Moss", "role": "Butler",
+      "bio": "The Hale family butler for thirty years, immaculate in his black uniform. Knows every corner of the manor.",
+      "motive": "Underpaid for decades, and one of three people who know the safe code.",
+      "alibi": "Says he was supervising dessert service in the kitchen.",
+      "questions": [
+        { "id": "d1", "text": "Where were you at 9:40 PM?", "answer": "In the kitchen, supervising dessert. The service ledger will show it." },
+        { "id": "d2", "text": "Is there any security footage?", "answer": "There's a hallway camera feeding the pantry monitor. I can show you the footage." },
+        { "id": "d3", "text": "Who knew the safe code?", "answer": "Lord Hale, Mr. Crane and myself. Nobody else, not even Lady Hale." }
+      ]
+    },
+    {
+      "id": "lila", "name": "Lila Frost", "role": "Niece, art dealer",
+      "bio": "Lord Hale's niece, an art dealer in an emerald-green dress. Charming, and always short of money.",
+      "motive": "Heavy gambling debts, and she knows exactly what the diamond is worth.",
+      "alibi": "Says she was playing the piano in the ballroom for the guests.",
+      "questions": [
+        { "id": "l1", "text": "Where were you at 9:40 PM?", "answer": "At the grand piano in the ballroom. Half the guests heard me, and the evening was recorded." },
+        { "id": "l2", "text": "What do you make of Victor?", "answer": "He's been jumpy all night. He left dinner early and kept checking his watch." },
+        { "id": "l3", "text": "Did you know the safe code?", "answer": "No. Uncle Edmund never trusted me with it. Wise man." }
+      ]
+    }
+  ],
+  "clues": [
+    { "id": "c1", "title": "Safe Opened With the Code", "location": "The study",
+      "description": "The safe door has no scratches or drill marks. It was opened with the correct six-digit code, which only Lord Hale, Victor Crane and Daniel Moss knew.",
+      "keyEvidence": false },
+    { "id": "c2", "title": "Scrap of Leather Glove", "location": "Study carpet, beside the safe",
+      "description": "A torn scrap of fine leather glove that reeks of cigar smoke. Only one suspect smokes cigars.",
+      "requiresClue": "c1", "keyEvidence": true },
+    { "id": "c3", "title": "Silver Cufflink", "location": "Under the study desk",
+      "description": "A silver cufflink engraved with the initials V.C., torn loose in a hurry.",
+      "requiresClue": "c2", "keyEvidence": true },
+    { "id": "c4", "title": "Hallway Camera Still", "location": "Pantry security monitor",
+      "description": "A grainy still from 9:41 PM shows a man in a grey suit slipping into the east hallway toward the study. His face is turned away.",
+      "unlockedByQuestion": "d2", "keyEvidence": true,
+      "contradictsSuspect": "victor",
+      "contradictionText": "Victor swore he never left the library, but a man in a grey suit, the same colour as Victor's, was filmed heading to the study at 9:41." },
+    { "id": "c5", "title": "Unread Library Book", "location": "Library reading table",
+      "description": "The book Victor claimed to be reading is covered in dust and its pages are uncut. The reading lamp is cold and unused.",
+      "unlockedByQuestion": "v1", "keyEvidence": true,
+      "contradictsSuspect": "victor",
+      "contradictionText": "Victor claimed he spent the evening reading, but the book was never opened and the lamp was never lit." },
+    { "id": "c6", "title": "Final Notice Letter", "location": "Library wastebasket",
+      "description": "A crumpled bank letter demanding 200,000 pounds from Hale & Crane Trading within the week, addressed to Victor.",
+      "requiresClue": "c5", "keyEvidence": true,
+      "contradictsSuspect": "victor",
+      "contradictionText": "Victor said the business has never been healthier, but the bank is demanding 200,000 pounds from him this week." },
+    { "id": "c7", "title": "Kitchen Dessert Ledger", "location": "Kitchen service desk",
+      "description": "A ledger signed by Daniel Moss for dessert service at 9:35, 9:42 and 9:50, countersigned by two chefs.",
+      "unlockedByQuestion": "d1", "keyEvidence": false,
+      "clearsSuspect": "daniel",
+      "clearsText": "Daniel was signing for dessert in the kitchen during the theft, which supports his alibi." },
+    { "id": "c8", "title": "Garden Phone Record", "location": "Margaret's phone log",
+      "description": "Phone records show a call from Margaret to her sister from 9:25 to 10:05 PM, connected through the tower covering the garden.",
+      "unlockedByQuestion": "m1", "keyEvidence": false,
+      "clearsSuspect": "margaret",
+      "clearsText": "Margaret's phone record places her in the garden for the whole theft, which supports her alibi." },
+    { "id": "c9", "title": "Ballroom Recording", "location": "Ballroom sound desk",
+      "description": "The charity's recording captures continuous piano playing from 9:00 to 10:00 PM, with Lila visible at the keys on the video feed.",
+      "unlockedByQuestion": "l1", "keyEvidence": false,
+      "clearsSuspect": "lila",
+      "clearsText": "Lila was recorded playing the piano throughout the theft, which supports her alibi." },
+    { "id": "c10", "title": "Draft Divorce Papers", "location": "Margaret's writing desk",
+      "description": "Draft divorce papers prepared by Margaret's lawyer, dated last week.",
+      "unlockedByQuestion": "m2", "keyEvidence": false,
+      "contradictsSuspect": "margaret",
+      "contradictionText": "She claimed a perfectly happy marriage but was preparing for divorce. That's a lie, but it doesn't put her at the safe." }
+  ]
+}

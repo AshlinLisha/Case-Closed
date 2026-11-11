@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CASE CLOSED: Operation Midnight - Detective Workstation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Cinzel:wght@600;800&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                        serif: ['"Cinzel"', 'serif'],
+                        sans: ['"Inter"', 'sans-serif'],
+                    },
+                    colors: {
+                        noir: {
+                            900: '#07090e',
+                            800: '#0d1117',
+                            700: '#161b22',
+                            600: '#21262d',
+                            500: '#30363d',
+                        },
+                        amber: {
+                            glow: '#ffb703',
+                            alert: '#fb8500',
+                        },
+                        cyber: {
+                            blue: '#3a86ef',
+                            cyan: '#48cae4',
+                        },
+                        crimson: {
+                            DEFAULT: '#e63946',
+                            dark: '#9b2226',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom UI Textures & Scanline Overlay */
+        .scanlines {
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.25) 50%
+            ), linear-gradient(
+                90deg,
+                rgba(255, 0, 0, 0.03),
+                rgba(0, 255, 0, 0.01),
+                rgba(0, 0, 255, 0.03)
+            );
+            background-size: 100% 3px, 6px 100%;
+            pointer-events: none;
+        }
+
+        .glow-amber {
+            box-shadow: 0 0 15px rgba(255, 183, 3, 0.2);
+        }
+        .glow-cyan {
+            box-shadow: 0 0 15px rgba(72, 202, 228, 0.2);
+        }
+        .glow-crimson {
+            box-shadow: 0 0 20px rgba(230, 57, 70, 0.4);
+        }
+
+        /* Stamp animation styles */
+        .stamp {
+            display: inline-block;
+            padding: 0.25rem 1rem;
+            text-transform: uppercase;
+            font-weight: 800;
+            border: 4px solid currentColor;
+            mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="black"/></svg>');
+            transform: rotate(-12deg) scale(1);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d1117;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ffb703;
+        }
+
+        @keyframes pulse-scan {
+            0% { top: 0%; }
+            50% { top: 100%; }
+            100% { top: 0%; }
+        }
+
+        .scanner-bar {
+            animation: pulse-scan 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-noir-900 text-gray-200 font-sans h-screen flex flex-col overflow-hidden select-none">
+
+    <!-- Scanline Visual Filter overlay -->
+    <div class="absolute inset-0 scanlines z-50"></div>
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="h-16 bg-noir-800 border-b border-noir-600 px-6 flex items-center justify-between z-40 relative">
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2">
+                <div class="w-3 h-3 rounded-full bg-amber-glow animate-ping"></div>
+                <h1 class="font-serif font-extrabold text-xl tracking-wider text-amber-glow">OPERATION MIDNIGHT</h1>
+            </div>
+            <span class="text-xs font-mono bg-noir-700 text-gray-400 px-2.5 py-1 rounded border border-noir-600">
+                DOSSIER #9042-B
+            </span>
+            <span class="text-xs font-mono bg-amber-500/10 text-amber-glow border border-amber-500/30 px-2.5 py-1 rounded">
+                CLASSIFIED // LEVEL 4 CLEARANCE
+            </span>
+        </div>
+
+        <div class="flex items-center gap-8 font-mono text-xs">
+            <div class="flex items-center gap-2">
+                <span class="text-gray-500">SYSTEM TIME:</span>
+                <span id="sysClock" class="text-cyber-cyan font-bold">11:42:09 PM</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-gray-500">STATUS:</span>
+                <span class="text-emerald-400 font-bold flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span> ACTIVE INVESTIGATION
+                </span>
+            </div>
+            <button id="sfxToggle" onclick="toggleSFX()" class="flex items-center gap-2 px-3 py-1.5 rounded bg-noir-700 hover:bg-noir-600 border border-noir-500 text-gray-300 transition">
+                <span id="sfxIcon">🔊</span> <span id="sfxLabel">SFX: ON</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN INTERACTION WORKSPACE -->
+    <div class="flex-1 flex overflow-hidden z-30">
+
+        <!-- SIDEBAR NAVIGATION -->
+        <aside class="w-64 bg-noir-800 border-r border-noir-600 flex flex-col justify-between p-4">
+            <div class="space-y-2">
+                <div class="text-[10px] font-mono tracking-widest text-gray-500 uppercase px-3 mb-2">Primary Modules</div>
+                
+                <button onclick="switchTab('evidence')" id="nav-evidence" class="tab-btn w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-mono transition bg-amber-glow/10 border border-amber-glow/40 text-amber-glow">
+                    <div class="flex items-center gap-3">
+                        <span>📁</span>
+                        <span>Evidence Vault</span>
+                    </div>
+                    <span class="text-xs bg-amber-glow/20 px-2 py-0.5 rounded-full" id="evidenceCount">5</span>
+                </button>
+
+                <button onclick="switchTab('suspects')" id="nav-suspects" class="tab-btn w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-mono text-gray-400 hover:bg-noir-700 hover:text-gray-200 transition">
+                    <div class="flex items-center gap-3">
+                        <span>👥</span>
+                        <span>Suspect Profiles</span>
+                    </div>
+                    <span class="text-xs bg-noir-600 px-2 py-0.5 rounded-full">3</span>
+                </button>
+
+                <button onclick="switchTab('timeline')" id="nav-timeline" class="tab-btn w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-mono text-gray-400 hover:bg-noir-700 hover:text-gray-200 transition">
+                    <div class="flex items-center gap-3">
+                        <span>⏱️</span>
+                        <span>Timeline Log</span>
+                    </div>
+                </button>
+
+                <button onclick="switchTab('interrogation')" id="nav-interrogation" class="tab-btn w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-mono text-gray-400 hover:bg-noir-700 hover:text-gray-200 transition">
+                    <div class="flex items-center gap-3">
+                        <span>🎙️</span>
+                        <span>Wiretaps & Audio</span>
+                    </div>
+                </button>
+            </div>
+
+            <!-- ARREST WARRANT ACTION BOX -->
+            <div class="bg-crimson-dark/20 border border-crimson/50 rounded-xl p-4 text-center space-y-3">
+                <div class="text-xs font-mono text-crimson font-bold uppercase tracking-wider">High Risk Action</div>
+                <p class="text-xs text-gray-400">Assemble core evidence and issue final arrest warrant.</p>
+                <button onclick="openArrestModal()" class="w-full bg-crimson hover:bg-red-600 text-white font-mono font-bold text-xs py-3 px-4 rounded-lg glow-crimson transition flex items-center justify-center gap-2">
+                    <span>⚡</span> ISSUE ARREST WARRANT
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN VIEWPORT PANELS -->
+        <main class="flex-1 bg-noir-900 p-6 overflow-y-auto">
+
+            <!-- TAB 1: EVIDENCE VAULT -->
+            <section id="panel-evidence" class="space-y-6">
+                <div class="flex items-center justify-between border-b border-noir-600 pb-4">
+                    <div>
+                        <h2 class="text-xl font-serif font-bold text-white flex items-center gap-2">
+                            <span>🔍</span> CRIME SCENE EVIDENCE VAULT
+                        </h2>
+                        <p class="text-xs text-gray-400 font-mono mt-1">Location: Blackwood Manor Study | Incident Date: Nov 11, 23:45 EST</p>
+                    </div>
+                    <span class="text-xs font-mono text-cyber-cyan bg-cyber-blue/10 border border-cyber-cyan/30 px-3 py-1.5 rounded">
+                        ANALYTICAL HARDWARE: ONLINE
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                    <!-- Evidence Item 1 -->
+                    <div class="bg-noir-800 border border-noir-600 rounded-xl p-5 hover:border-amber-glow/50 transition flex flex-col justify-between space-y-4">
+                        <div>
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="text-xs font-mono text-amber-glow bg-amber-glow/10 px-2 py-0.5 rounded">ITEM #EV-01</span>
+                                <span class="text-[10px] font-mono text-gray-400">PHYSICAL LOG</span>
+                            </div>
+                            <h3 class="font-bold text-white text-base">Shattered Brandy Glass</h3>
+                            <p class="text-xs text-gray-400 mt-2 leading-relaxed">Recovered near the mahogany desk. Contains trace residue of cyanide compound and partial lipstick stain.</p>
+                        </div>
+                        <div class="bg-noir-900 p-3 rounded-lg border border-noir-700 flex justify-between items-center text-xs font-mono">
+                            <span class="text-gray-400">LAB STATUS:</span>
+                            <span class="text-emerald-400">TOXICOLOGY MATCHED</span>
+                        </div>
+                        <button onclick="inspectEvidence('glass')" class="w-full bg-noir-700 hover:bg-noir-600 text-xs font-mono py-2 rounded text-gray-200 border border-noir-500 transition">
+                            INSPECT DETAIL
+                        </button>
+                    </div>
+
+                    <!-- Evidence Item 2: Interactive Fingerprint Scanner -->
+                    <div class="bg-noir-800 border border-noir-600 rounded-xl p-5 hover:border-cyber-cyan/50 transition flex flex-col justify-between space-y-4">
+                        <div>
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="text-xs font-mono text-cyber-cyan bg-cyber-blue/10 px-2 py-0.5 rounded">ITEM #EV-02</span>
+                                <span class="text-[10px] font-mono text-gray-400">BIOMETRIC LOG</span>
+                            </div>
+                            <h3 class="font-bold text-white text-base">Safe Lock Latent Print</h3>
+                            <p class="text-xs text-gray-400 mt-2 leading-relaxed">Partial print extracted from wall safe keypad located behind oil painting.</p>
+                        </div>
+                        
+                        <!-- Scanner Simulation Box -->
+                        <div class="relative h-24 bg-noir-900 rounded-lg border border-noir-700 overflow-hidden flex items-center justify-center">
+                            <div class="scanner-bar absolute w-full h-1 bg-cyber-cyan shadow-[0_0_10px_#48cae4]"></div>
+                            <div class="text-center">
+                                <span class="text-3xl opacity-40">🖐️</span>
+                                <div id="printMatchText" class="text-[10px] font-mono text-cyber-cyan mt-1">SCANNER READY</div>
+                            </div>
+                        </div>
+
+                        <button onclick="runFingerprintScan()" class="w-full bg-cyber-blue/20 hover:bg-cyber-blue/30 text-cyber-cyan text-xs font-mono py-2 rounded border border-cyber-cyan/40 transition">
+                            RUN BIOMETRIC MATCH
+                        </button>
+                    </div>
+
+                    <!-- Evidence Item 3 -->
+                    <div class="bg-noir-800 border border-noir-600 rounded-xl p-5 hover:border-amber-glow/50 transition flex flex-col justify-between space-y-4">
+                        <div>
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="text-xs font-mono text-amber-glow bg-amber-glow/10 px-2 py-0.5 rounded">ITEM #EV-03</span>
+                                <span class="text-[10px] font-mono text-gray-400">DOCUMENT</span>
+                            </div>
+                            <h3 class="font-bold text-white text-base">Altered Last Will & Testament</h3>
+                            <p class="text-xs text-gray-400 mt-2 leading-relaxed">Drafted 3 days prior to murder. Sole beneficiary modified to Arthur Pendelton.</p>
+                        </div>
+                        <div class="bg-noir-900 p-3 rounded-lg border border-noir-700 flex justify-between items-center text-xs font-mono">
+                            <span class="text-gray-400">FORGERY INDEX:</span>
+                            <span class="text-crimson font-bold">87% HIGH</span>
+                        </div>
+                        <button onclick="inspectEvidence('will')" class="w-full bg-noir-700 hover:bg-noir-600 text-xs font-mono py-2 rounded text-gray-200 border border-noir-500 transition">
+                            INSPECT DOCUMENT
+                        </button>
+                    </div>
+
+                    <!-- Evidence Item 4 -->
+                    <div class="bg-noir-800 border border-noir-600 rounded-xl p-5 hover:border-amber-glow/50 transition flex flex-col justify-between space-y-4">
+                        <div>
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="text-xs font-mono text-amber-glow bg-amber-glow/10 px-2 py-0.5 rounded">ITEM #EV-04</span>
+                                <span class="text-[10px] font-mono text-gray-400">PHYSICAL LOG</span>
+                            </div>
+                            <h3 class="font-bold text-white text-base">Muddy Boots (Size 10)</h3>
+                            <p class="text-xs text-gray-400 mt-2 leading-relaxed">Found inside servant quarter trunk. Soil trace matches conservatory flower bed.</p>
+                        </div>
+                        <div class="bg-noir-900 p-3 rounded-lg border border-noir-700 flex justify-between items-center text-xs font-mono">
+                            <span class="text-gray-400">OWNERSHIP:</span>
+                            <span class="text-amber-glow">ARTHUR PENDELTON</span>
+                        </div>
+                        <button onclick="inspectEvidence('boots')" class="w-full bg-noir-700 hover:bg-noir-600 text-xs font-mono py-2 rounded text-gray-200 border border-noir-500 transition">
+                            INSPECT DETAIL
+                        </button>
+                    </div>
+
+                    <!-- Evidence Item 5 -->
+                    <div class="bg-noir-800 border border-noir-600 rounded-xl p-5 hover:border-amber-glow/50 transition flex flex-col justify-between space-y-4">
+                        <div>
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="text-xs font-mono text-amber-glow bg-amber-glow/10 px-2 py-0.5 rounded">ITEM #EV-05</span>
+                                <span class="text-[10px] font-mono text-gray-400">DIGITAL LOG</span>
+                            </div>
+                            <h3 class="font-bold text-white text-base">Deleted Security Logs</h3>
+                            <p class="text-xs text-gray-400 mt-2 leading-relaxed">15-minute gap in hallway camera footage starting exactly at 11:30 PM.</p>
+                        </div>
+                        <div class="bg-noir-900 p-3 rounded-lg border border-noir-700 flex justify-between items-center text-xs font-mono">
+                            <span class="text-gray-400">OVERRIDE CODE:</span>
+                            <span class="text-cyber-cyan">ADMIN PASS-KEY B</span>
+                        </div>
+                        <button onclick="inspectEvidence('logs')" class="w-full bg-noir-700 hover:bg-noir-600 text-xs font-mono py-2 rounded text-gray-200 border border-noir-500 transition">
+                            INSPECT LOGS
+                        </button>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- TAB 2: SUSPECT PROFILES -->
+            <section id="panel-suspects" class="hidden space-y-6">
+                <div class="flex items-center justify-between border-b border-noir-600 pb-4">
+                    <div>
+                        <h2 class="text-xl font-serif font-bold text-white flex items-center gap-2">
+                            <span>👥</span> SUSPECT DOSSIERS
+                        </h2>
+                        <p class="text-xs text-gray-400 font-mono mt-1">Persons of interest currently detained at Precinct 4</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                    <!-- Suspect 1 -->
+                    <div class="bg-noir-800 border border-noir-600 rounded-xl p-5 flex flex-col justify-between space-y-4">
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-4">
+                                <div class="w-16 h-16 rounded-full bg-noir-700 border-2 border-amber-glow/50 flex items-center justify-center text-2xl">
+                                    👨‍💼
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-white text-lg">Arthur Pendelton</h3>
+                                    <p class="text-xs text-amber-glow font-mono">Head Butler (Age: 54)</p>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-2 text-xs">
+                                <div class="flex justify-between text-gray-400 font-mono">
+                                    <span>STRESS/DECEPTION RATING:</span>
+                                    <span class="text-crimson font-bold">78% HIGH</span>
+                                </div>
+                                <div class="w-full bg-noir-900 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-crimson h-full" style="width: 78%"></div>
+                                </div>
+                            </div>
+
+                            <div class="bg-noir-900 p-3 rounded-lg border border-noir-700 text-xs space-y-1">
+                                <span class="text-gray-400 font-mono block">STATED ALIBI:</span>
+                                <p class="text-gray-300 italic">"I was polishing silverware in the pantry from 11:15 PM until midnight."</p>
+                            </div>
+                        </div>
+
+                        <button onclick="selectSuspectForWarrant('Arthur Pendelton')" class="w-full bg-amber-glow/10 hover:bg-amber-glow/20 border border-amber-glow/40 text-amber-glow font-mono text-xs py-2 rounded transition">
+                            FLAG PRIMARY SUSPECT
+                        </button>
+                    </div>
+
+                    <!-- Suspect 2 -->
+                    <div class="bg-noir-800 border border-noir-600 rounded-xl p-5 flex flex-col justify-between space-y-4">
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-4">
+                                <div class="w-16 h-16 rounded-full bg-noir-700 border-2 border-cyber-cyan/50 flex items-center justify-center text-2xl">
+                                    👩‍🎨
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-white text-lg">Elena Rostova</h3>
+                                    <p class="text-xs text-cyber-cyan font-mono">Business Partner (Age: 38)</p>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2 text-xs">
+                                <div class="flex justify-between text-gray-400 font-mono">
+                                    <span>STRESS/DECEPTION RATING:</span>
+                                    <span class="text-amber-glow font-bold">45% MODERATE</span>
+                                </div>
+                                <div class="w-full bg-noir-900 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-amber-glow h-full" style="width: 45%"></div>
+                                </div>
+                            </div>
+
+                            <div class="bg-noir-900 p-3 rounded-lg border border-noir-700 text-xs space-y-1">
+                                <span class="text-gray-400 font-mono block">STATED ALIBI:</span>
+                                <p class="text-gray-300 italic">"I left Blackwood Manor at 11:00 PM precisely after our heated budget debate."</p>
+                            </div>
+                        </div>
+
+                        <button onclick="selectSuspectForWarrant('Elena Rostova')" class="w-full bg-noir-700 hover:bg-noir-600 border border-noir-500 text-gray-300 font-mono text-xs py-2 rounded transition">
+                            FLAG PRIMARY SUSPECT
+                        </button>
+                    </div>
+
+                    <!-- Suspect 3 -->
+                    <div class="bg-noir-800 border border-noir-600 rounded-xl p-5 flex flex-col justify-between space-y-4">
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-4">
+                                <div class="w-16 h-16 rounded-full bg-noir-700 border-2 border-emerald-400/50 flex items-center justify-center text-2xl">
+                                    👨‍⚕️
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-white text-lg">Dr. Alistair Vance</h3>
+                                    <p class="text-xs text-emerald-400 font-mono">Physician (Age: 61)</p>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2 text-xs">
+                                <div class="flex justify-between text-gray-400 font-mono">
+                                    <span>STRESS/DECEPTION RATING:</span>
+                                    <span class="text-emerald-400 font-bold">22% LOW</span>
+                                </div>
+                                <div class="w-full bg-noir-900 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-emerald-400 h-full" style="width: 22%"></div>
+                                </div>
+                            </div>
+
+                            <div class="bg-noir-900 p-3 rounded-lg border border-noir-700 text-xs space-y-1">
+                                <span class="text-gray-400 font-mono block">STATED ALIBI:</span>
+                                <p class="text-gray-300 italic">"I was at my Downtown clinic attending to an emergency procedure."</p>
+                            </div>
+                        </div>
+
+                        <button onclick="selectSuspectForWarrant('Dr. Alistair Vance')" class="w-full bg-noir-700 hover:bg-noir-600 border border-noir-500 text-gray-300 font-mono text-xs py-2 rounded transition">
+                            FLAG PRIMARY SUSPECT
+                        </button>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- TAB 3: TIMELINE RECONSTRUCTION -->
+            <section id="panel-timeline" class="hidden space-y-6">
+                <div class="flex items-center justify-between border-b border-noir-600 pb-4">
+                    <div>
+                        <h2 class="text-xl font-serif font-bold text-white flex items-center gap-2">
+                            <span>⏱️</span> CHRONOLOGICAL TIMELINE RECONSTRUCTION
+                        </h2>
+                        <p class="text-xs text-gray-400 font-mono mt-1">Cross-referencing witness testimony vs logged evidence timestamps</p>
+                    </div>
+                </div>
+
+                <div class="relative border-l-2 border-noir-600 ml-4 space-y-6 py-2">
+
+                    <div class="relative pl-6">
+                        <div class="absolute -left-2.5 top-1.5 w-5 h-5 rounded-full bg-noir-900 border-2 border-cyber-cyan flex items-center justify-center text-[10px]">1</div>
+                        <div class="bg-noir-800 border border-noir-600 p-4 rounded-lg space-y-1">
+                            <span class="text-xs font-mono text-cyber-cyan">23:00 EST</span>
+                            <h4 class="font-bold text-white text-sm">Elena Rostova leaves main parlor</h4>
+                            <p class="text-xs text-gray-400">Heated verbal dispute reported by staff over company acquisition terms.</p>
+                        </div>
+                    </div>
+
+                    <div class="relative pl-6">
+                        <div class="absolute -left-2.5 top-1.5 w-5 h-5 rounded-full bg-noir-900 border-2 border-crimson flex items-center justify-center text-[10px]">2</div>
+                        <div class="bg-noir-800 border border-crimson/40 p-4 rounded-lg space-y-1">
+                            <div class="flex justify-between">
+                                <span class="text-xs font-mono text-crimson font-bold">23:30 EST // CRITICAL ANOMALY</span>
+                                <span class="text-[10px] font-mono text-crimson bg-crimson/10 px-2 rounded">CONFLICT DECTECTED</span>
+                            </div>
+                            <h4 class="font-bold text-white text-sm">Security Log Blackout Period Starts</h4>
+                            <p class="text-xs text-gray-400">Admin credentials used to disable hallway cameras for 15 minutes.</p>
+                        </div>
+                    </div>
+
+                    <div class="relative pl-6">
+                        <div class="absolute -left-2.5 top-1.5 w-5 h-5 rounded-full bg-noir-900 border-2 border-amber-glow flex items-center justify-center text-[10px]">3</div>
+                        <div class="bg-noir-800 border border-noir-600 p-4 rounded-lg space-y-1">
+                            <span class="text-xs font-mono text-amber-glow">23:45 EST</span>
+                            <h4 class="font-bold text-white text-sm">Estimated Time of Death</h4>
+                            <p class="text-xs text-gray-400">Brandy glass shattered in study; cyanide ingestion confirmed by initial coroner report.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- TAB 4: WIRETAP & AUDIO INTERROGATION -->
+            <section id="panel-interrogation" class="hidden space-y-6">
+                <div class="flex items-center justify-between border-b border-noir-600 pb-4">
+                    <div>
+                        <h2 class="text-xl font-serif font-bold text-white flex items-center gap-2">
+                            <span>🎙️</span> WIRETAP AUDIO TRANSCRIPTS
+                        </h2>
+                        <p class="text-xs text-gray-400 font-mono mt-1">Surveillance Audio Capture - Line 04 (Manor Pantry)</p>
+                    </div>
+                </div>
+
+                <div class="bg-noir-800 border border-noir-600 rounded-xl p-6 space-y-6">
+                    <div class="flex items-center justify-between bg-noir-900 p-4 rounded-lg border border-noir-700">
+                        <div class="flex items-center gap-4">
+                            <button id="audioPlayBtn" onclick="toggleAudioMock()" class="w-12 h-12 rounded-full bg-amber-glow text-noir-900 flex items-center justify-center font-bold text-xl hover:scale-105 transition">
+                                ▶
+                            </button>
+                            <div>
+                                <h4 class="font-bold text-white text-sm">Intercepted Phone Call #209</h4>
+                                <p class="text-xs text-gray-400 font-mono">Timestamp: Nov 11, 23:20 EST | Duration: 0:42</p>
+                            </div>
+                        </div>
+                        <div id="audioWaveform" class="flex items-center gap-1 h-8">
+                            <div class="w-1 bg-amber-glow h-3"></div>
+                            <div class="w-1 bg-amber-glow h-6"></div>
+                            <div class="w-1 bg-amber-glow h-4"></div>
+                            <div class="w-1 bg-amber-glow h-7"></div>
+                            <div class="w-1 bg-amber-glow h-2"></div>
+                            <div class="w-1 bg-amber-glow h-5"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-noir-900 p-4 rounded-lg border border-noir-700 font-mono text-xs space-y-3">
+                        <div class="text-gray-500">[AUDIO TRANSCRIPT DECRYPTED]</div>
+                        <p><span class="text-amber-glow">VOICE A (Unknown):</span> "Is it taken care of? Does the new will hold up?"</p>
+                        <p><span class="text-crimson">VOICE B (Arthur P.):</span> "The glass is prepared. He will suspect nothing. Just ensure the payout gets routed to the offshore account."</p>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ARREST WARRANT MODAL -->
+    <div id="arrestModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-noir-800 border-2 border-crimson rounded-2xl max-w-2xl w-full p-6 space-y-6 glow-crimson relative">
+            <button onclick="closeArrestModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white font-mono text-xl">✕</button>
+
+            <div class="border-b border-noir-600 pb-4">
+                <div class="text-xs font-mono text-crimson font-bold uppercase tracking-widest">WARRANT EXECUTION TERMINAL</div>
+                <h3 class="text-2xl font-serif font-extrabold text-white mt-1">SUBMIT FINAL ARREST WARRANT</h3>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-mono text-gray-400 mb-1">SELECTED PRIMARY ACCUSED:</label>
+                    <select id="warrantSuspectSelect" class="w-full bg-noir-900 border border-noir-600 rounded-lg p-3 text-sm text-white font-mono focus:border-crimson outline-none">
+                        <option value="Arthur Pendelton">Arthur Pendelton (Head Butler)</option>
+                        <option value="Elena Rostova">Elena Rostova (Business Partner)</option>
+                        <option value="Dr. Alistair Vance">Dr. Alistair Vance (Physician)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-mono text-gray-400 mb-2">SELECT 3 INCRODIBLE PIECES OF EVIDENCE:</label>
+                    <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+                        <label class="flex items-center gap-2 bg-noir-900 p-3 rounded border border-noir-700 cursor-pointer hover:border-amber-glow">
+                            <input type="checkbox" value="glass" class="evidence-check"> Poisoned Glass (Residue)
+                        </label>
+                        <label class="flex items-center gap-2 bg-noir-900 p-3 rounded border border-noir-700 cursor-pointer hover:border-amber-glow">
+                            <input type="checkbox" value="will" class="evidence-check"> Altered Will (Benefit)
+                        </label>
+                        <label class="flex items-center gap-2 bg-noir-900 p-3 rounded border border-noir-700 cursor-pointer hover:border-amber-glow">
+                            <input type="checkbox" value="print" class="evidence-check"> Fingerprint Match
+                        </label>
+                        <label class="flex items-center gap-2 bg-noir-900 p-3 rounded border border-noir-700 cursor-pointer hover:border-amber-glow">
+                            <input type="checkbox" value="audio" class="evidence-check"> Pantry Wiretap Recording
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-mono text-gray-400 mb-1">DETECTIVE SUMMARY / PROSECUTION MOTIVE:</label>
+                    <textarea rows="3" placeholder="State motive and sequence of event proof..." class="w-full bg-noir-900 border border-noir-600 rounded-lg p-3 text-xs text-white font-mono focus:border-crimson outline-none resize-none"></textarea>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="closeArrestModal()" class="w-1/2 bg-noir-700 hover:bg-noir-600 text-gray-300 font-mono text-xs py-3 rounded-lg transition">
+                    ABORT WARRANT
+                </button>
+                <button onclick="executeWarrantVerdict()" class="w-1/2 bg-crimson hover:bg-red-600 text-white font-mono font-bold text-xs py-3 rounded-lg glow-crimson transition">
+                    CONFIRM & ARREST
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VERDICT RESULT OVERLAY -->
+    <div id="verdictOverlay" class="fixed inset-0 bg-black/95 z-50 hidden flex flex-col items-center justify-center p-6 text-center">
+        <div id="stampBox" class="mb-6">
+            <span id="verdictStamp" class="stamp text-5xl">CASE SOLVED</span>
+        </div>
+        <h2 id="verdictTitle" class="text-3xl font-serif font-bold text-white mb-2">ARREST WARRANT EXECUTED</h2>
+        <p id="verdictDesc" class="text-sm text-gray-400 font-mono max-w-lg mb-8 leading-relaxed"></p>
+        <button onclick="location.reload()" class="bg-amber-glow text-noir-900 font-mono font-bold px-6 py-3 rounded-lg hover:scale-105 transition">
+            REOPEN INVESTIGATION
+        </button>
+    </div>
+
+    <!-- SCRIPT LOGIC -->
+    <script>
+        let sfxEnabled = true;
+
+        // Clock Update Function
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('sysClock').innerText = now.toLocaleTimeString();
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Audio Toggle Mock
+        function toggleSFX() {
+            sfxEnabled = !sfxEnabled;
+            document.getElementById('sfxLabel').innerText = sfxEnabled ? "SFX: ON" : "SFX: OFF";
+            document.getElementById('sfxIcon').innerText = sfxEnabled ? "🔊" : "🔇";
+        }
+
+        // Tab Switcher
+        function switchTab(tabId) {
+            ['evidence', 'suspects', 'timeline', 'interrogation'].forEach(id => {
+                document.getElementById(`panel-${id}`).classList.add('hidden');
+                const btn = document.getElementById(`nav-${id}`);
+                btn.className = "tab-btn w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-mono text-gray-400 hover:bg-noir-700 hover:text-gray-200 transition";
+            });
+
+            document.getElementById(`panel-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            activeBtn.className = "tab-btn w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-mono transition bg-amber-glow/10 border border-amber-glow/40 text-amber-glow";
+        }
+
+        // Fingerprint Scan Simulation
+        function runFingerprintScan() {
+            const matchText = document.getElementById('printMatchText');
+            matchText.innerText = "SCANNING DATABASE...";
+            matchText.className = "text-[10px] font-mono text-amber-glow mt-1 animate-pulse";
+
+            setTimeout(() => {
+                matchText.innerText = "MATCH FOUND: ARTHUR PENDELTON (99.4%)";
+                matchText.className = "text-[10px] font-mono text-crimson font-bold mt-1";
+            }, 1500);
+        }
+
+        // Evidence detail viewer alert fallback replacement
+        function inspectEvidence(type) {
+            switchTab('evidence');
+        }
+
+        // Select Suspect shortcut from dossier
+        function selectSuspectForWarrant(name) {
+            document.getElementById('warrantSuspectSelect').value = name;
+            openArrestModal();
+        }
+
+        // Modal Controls
+        function openArrestModal() {
+            document.getElementById('arrestModal').classList.remove('hidden');
+        }
+
+        function closeArrestModal() {
+            document.getElementById('arrestModal').classList.add('hidden');
+        }
+
+        // Mock Audio Waveform animation
+        let isPlayingAudio = false;
+        function toggleAudioMock() {
+            isPlayingAudio = !isPlayingAudio;
+            document.getElementById('audioPlayBtn').innerText = isPlayingAudio ? "⏸" : "▶";
+        }
+
+        // Warrant Execution Logic
+        function executeWarrantVerdict() {
+            const selectedSuspect = document.getElementById('warrantSuspectSelect').value;
+            const checkedEvidence = document.querySelectorAll('.evidence-check:checked');
+            
+            closeArrestModal();
+            const overlay = document.getElementById('verdictOverlay');
+            const stamp = document.getElementById('verdictStamp');
+            const title = document.getElementById('verdictTitle');
+            const desc = document.getElementById('verdictDesc');
+
+            overlay.classList.remove('hidden');
+
+            // Success Condition: Arthur Pendelton + at least 3 critical evidence checked
+            if (selectedSuspect === "Arthur Pendelton" && checkedEvidence.length >= 3) {
+                stamp.innerText = "SOLVED // CLOSED";
+                stamp.className = "stamp text-5xl text-emerald-400 border-emerald-400";
+                title.innerText = "ARREST WARRANT VALIDATED";
+                desc.innerText = "Arthur Pendelton was taken into custody without resistance. Biometric evidence, forged legal documents, and intercepted pantry audio proved conclusive in court.";
+            } else {
+                stamp.innerText = "CASE FAILED";
+                stamp.className = "stamp text-5xl text-crimson border-crimson";
+                title.innerText = "INVALID PROSECUTION";
+                desc.innerText = "The District Attorney rejected the warrant due to insufficient evidence link or targeting an innocent suspect. The perpetrator escaped justice.";
+            }
+        }
+    </script>
+</body>
+</html>
